@@ -81,7 +81,7 @@ class ClaudeRepository @Inject constructor(
             } finally {
                 es.cancel()
             }
-            if (isActive) delay(3000) // reconnect backoff
+            if (isActive) delay(1000) // reconnect backoff (fast recovery)
         }
         awaitClose { }
     }
