@@ -10,7 +10,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +50,7 @@ import com.tvport.dashboard.ui.theme.Dimens
 import com.tvport.dashboard.ui.theme.DisplayFamily
 import com.tvport.dashboard.ui.theme.LocalDash
 import com.tvport.dashboard.ui.theme.MonoFamily
+import com.tvport.dashboard.ui.theme.dashCard
 
 private val Green = Color(0xFF22C55E)
 private val Amber = Color(0xFFE0B65B)
@@ -127,9 +126,7 @@ fun ClaudeTamagotchi(modifier: Modifier = Modifier) {
 
     Box(
         modifier
-            .clip(RoundedCornerShape(Dimens.tileCorner))
-            .background(c.raised.copy(alpha = 0.80f))
-            .border(Dimens.tileBorder, tint.copy(alpha = 0.40f), RoundedCornerShape(Dimens.tileCorner))
+            .dashCard(borderTint = tint)
             .padding(Dimens.tilePadding),
     ) {
         Row(

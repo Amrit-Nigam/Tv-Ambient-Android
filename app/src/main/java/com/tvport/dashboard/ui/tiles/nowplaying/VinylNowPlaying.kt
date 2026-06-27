@@ -20,9 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -42,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,6 +54,7 @@ import com.tvport.dashboard.ui.theme.BodyFamily
 import com.tvport.dashboard.ui.theme.DisplayFamily
 import com.tvport.dashboard.ui.theme.LocalDash
 import com.tvport.dashboard.ui.theme.MonoFamily
+import com.tvport.dashboard.ui.theme.dashCard
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -147,6 +147,37 @@ private fun VinylDisc(
                 )
                 r += s * 0.012f
             }
+
+            // SHINE: a soft static top-left "light", plus two specular highlights that sweep around
+            // with the spin — so the disc reads as a glossy record that's clearly rotating.
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.07f), Color.Transparent),
+                    center = Offset(center.x - discR * 0.34f, center.y - discR * 0.40f),
+                    radius = discR * 0.95f,
+                ),
+                radius = discR,
+                center = center,
+            )
+            rotate(degrees = angle, pivot = center) {
+                drawCircle(
+                    brush = Brush.sweepGradient(
+                        colorStops = arrayOf(
+                            0.00f to Color.Transparent,
+                            0.06f to Color.White.copy(alpha = 0.13f),
+                            0.14f to Color.Transparent,
+                            0.50f to Color.Transparent,
+                            0.56f to Color.White.copy(alpha = 0.09f),
+                            0.64f to Color.Transparent,
+                            1.00f to Color.Transparent,
+                        ),
+                        center = center,
+                    ),
+                    radius = discR,
+                    center = center,
+                )
+            }
+
             // outer rim + glowing accent ring around the label
             drawCircle(c.accent.copy(alpha = 0.18f), radius = discR, center = center, style = Stroke(width = 2f))
             drawCircle(c.accent.copy(alpha = 0.85f), radius = labelR + s * 0.012f, center = center, style = Stroke(width = s * 0.012f))
@@ -223,9 +254,7 @@ private fun TrackInfo(ui: NowPlayingUi?, isPlaying: Boolean, progress: Float) {
     Column(
         modifier = Modifier
             .fillMaxWidth(0.82f)
-            .clip(RoundedCornerShape(24.dp))
-            .background(c.raised.copy(alpha = 0.78f))
-            .border(1.dp, c.border, RoundedCornerShape(24.dp))
+            .dashCard()
             .padding(horizontal = 28.dp, vertical = 22.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

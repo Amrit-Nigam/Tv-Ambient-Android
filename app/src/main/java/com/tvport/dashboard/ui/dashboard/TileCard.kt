@@ -1,7 +1,5 @@
 package com.tvport.dashboard.ui.dashboard
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,13 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,6 +23,7 @@ import androidx.compose.material3.Text
 import com.tvport.dashboard.ui.theme.BodyFamily
 import com.tvport.dashboard.ui.theme.Dimens
 import com.tvport.dashboard.ui.theme.LocalDash
+import com.tvport.dashboard.ui.theme.dashCard
 
 /**
  * The standard floating tile: translucent raised surface, subtle border, rounded corners,
@@ -37,13 +34,9 @@ fun TileCard(
     modifier: Modifier = Modifier,
     content: @Composable (() -> Unit),
 ) {
-    val c = LocalDash.current
     Box(
         modifier
-            .clip(RoundedCornerShape(Dimens.tileCorner))
-            // translucent so the visualizer shows through, but dark enough for contrast
-            .background(c.raised.copy(alpha = 0.78f))
-            .border(Dimens.tileBorder, c.border, RoundedCornerShape(Dimens.tileCorner))
+            .dashCard()
             .padding(Dimens.tilePadding)
     ) {
         content()
