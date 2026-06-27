@@ -20,6 +20,7 @@ import com.tvport.dashboard.ui.theme.DashTheme
 import com.tvport.dashboard.ui.theme.Dimens
 import com.tvport.dashboard.ui.theme.LocalDash
 import com.tvport.dashboard.ui.tiles.clock.ClockTile
+import com.tvport.dashboard.ui.tiles.f1.F1Tile
 import com.tvport.dashboard.ui.tiles.fifa.FifaTile
 import com.tvport.dashboard.ui.tiles.nowplaying.NowPlayingTile
 import com.tvport.dashboard.ui.visualizer.VisualizerBackground
@@ -28,7 +29,7 @@ import com.tvport.dashboard.ui.visualizer.VisualizerBackground
  * The single dashboard screen. Layered:
  *   1. Visualizer (full-bleed animated background)
  *   2. Pixel-shift + night-dim surface wrapping everything
- *   3. Clock anchor (top-left) + tile row: Now Playing | Next Match
+ *   3. Clock anchor (top-left) + tile row: Now Playing | Next Match | Next Race
  */
 @Composable
 fun DashboardScreen() {
@@ -56,7 +57,7 @@ fun DashboardScreen() {
                     // Clock anchor
                     ClockTile()
 
-                    // Tile row: Now Playing | Next Match — takes the bulk of the screen
+                    // Tile row: Now Playing | Next Match | Next Race — takes the bulk of the screen
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -65,6 +66,7 @@ fun DashboardScreen() {
                     ) {
                         NowPlayingTile(Modifier.weight(1.6f).fillMaxHeight())
                         FifaTile(Modifier.weight(1f).fillMaxHeight())
+                        F1Tile(Modifier.weight(1f).fillMaxHeight())
                     }
                 }
             }
