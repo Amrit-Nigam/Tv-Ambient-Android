@@ -45,4 +45,6 @@ data class AppConfig(
     val calendarRefreshMin: Int = 20,
     val fifaRefreshMin: Int = 30,
     val f1RefreshMin: Int = 60,
+    /** Claude status poll cadence (fast — it's a local LAN endpoint). */
+    val claudePollSec: Int = 2,
 )

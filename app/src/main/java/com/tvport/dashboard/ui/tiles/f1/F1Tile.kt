@@ -1,5 +1,6 @@
 package com.tvport.dashboard.ui.tiles.f1
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import com.tvport.dashboard.ui.dashboard.TileQuietMessage
 import com.tvport.dashboard.ui.theme.BodyFamily
 import com.tvport.dashboard.ui.theme.DisplayFamily
 import com.tvport.dashboard.ui.theme.LocalDash
+import com.tvport.dashboard.ui.theme.MonoFamily
 
 /**
  * NEXT F1 RACE tile. Real data from Jolpica-F1 (the Ergast mirror the portfolio used — free, no
@@ -63,27 +65,18 @@ private fun F1Body(ui: F1Ui) {
     }
     val remaining = ui.raceStartMillis - now
 
-    Column(Modifier.fillMaxSize()) {
-        if (ui.round != null) {
-            Text(
-                text = ui.round.uppercase(),
-                color = c.accent,
-                fontFamily = BodyFamily,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                letterSpacing = 1.5.sp,
-            )
-            Spacer(Modifier.height(6.dp))
-        }
-
+    Column(
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+    ) {
         Text(
             text = ui.raceName,
             color = c.textHi,
             fontFamily = DisplayFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 22.sp,
-            lineHeight = 25.sp,
-            maxLines = 2,
+            fontSize = 21.sp,
+            lineHeight = 24.sp,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Spacer(Modifier.height(4.dp))
@@ -92,17 +85,17 @@ private fun F1Body(ui: F1Ui) {
             color = c.textMid,
             fontFamily = BodyFamily,
             fontWeight = FontWeight.Medium,
-            fontSize = 16.sp,
+            fontSize = 14.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
 
         Text(
             text = formatCountdown(remaining),
             color = c.accent2,
-            fontFamily = DisplayFamily,
+            fontFamily = MonoFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 24.sp,
         )

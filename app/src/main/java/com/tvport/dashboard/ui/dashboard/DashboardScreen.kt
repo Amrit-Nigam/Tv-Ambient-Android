@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -32,6 +33,7 @@ import com.tvport.dashboard.ui.theme.DashTheme
 import com.tvport.dashboard.ui.theme.Dimens
 import com.tvport.dashboard.ui.theme.LocalDash
 import com.tvport.dashboard.ui.theme.withAlbumScheme
+import com.tvport.dashboard.ui.tiles.claude.ClaudeBar
 import com.tvport.dashboard.ui.tiles.clock.ClockTile
 import com.tvport.dashboard.ui.tiles.f1.F1Tile
 import com.tvport.dashboard.ui.tiles.fifa.FifaTile
@@ -120,30 +122,44 @@ fun DashboardScreen() {
 
                 // (2) Burn-in pixel-shift + night scrim wrap the content layer.
                 BurnInDimSurface(state = dim) {
-                    Row(
+                    Column(
                         Modifier
                             .fillMaxSize()
                             .padding(Dimens.screenPadding),
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.tileGap),
+                        verticalArrangement = Arrangement.spacedBy(Dimens.tileGap),
                     ) {
-                        // LEFT: the vinyl hero
-                        VinylNowPlaying(
+                        Row(
                             Modifier
-                                .weight(1.25f)
-                                .fillMaxHeight(),
-                        )
-
-                        // RIGHT: clock + the two sports tiles
-                        Column(
-                            Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            verticalArrangement = Arrangement.spacedBy(Dimens.tileGap),
+                                .fillMaxWidth()
+                                .weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.tileGap),
                         ) {
-                            ClockTile()
-                            FifaTile(Modifier.fillMaxWidth().weight(1f))
-                            F1Tile(Modifier.fillMaxWidth().weight(1f))
+                            // LEFT: the vinyl hero
+                            VinylNowPlaying(
+                                Modifier
+                                    .weight(1.25f)
+                                    .fillMaxHeight(),
+                            )
+
+                            // RIGHT: clock + the two sports tiles
+                            Column(
+                                Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                verticalArrangement = Arrangement.spacedBy(Dimens.tileGap),
+                            ) {
+                                ClockTile()
+                                FifaTile(Modifier.fillMaxWidth().weight(1f))
+                                F1Tile(Modifier.fillMaxWidth().weight(1f))
+                            }
                         }
+
+                        // BOTTOM: live Claude terminal status bar (full width)
+                        ClaudeBar(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(58.dp),
+                        )
                     }
                 }
             }

@@ -52,6 +52,7 @@ import com.tvport.dashboard.core.TileState
 import com.tvport.dashboard.ui.theme.BodyFamily
 import com.tvport.dashboard.ui.theme.DisplayFamily
 import com.tvport.dashboard.ui.theme.LocalDash
+import com.tvport.dashboard.ui.theme.MonoFamily
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -264,8 +265,8 @@ private fun TrackInfo(ui: NowPlayingUi?, isPlaying: Boolean, progress: Float) {
             Modifier.fillMaxWidth(0.7f),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(formatMs(ui?.progressMs ?: 0L), color = c.textMid, fontFamily = DisplayFamily, fontSize = 13.sp)
-            Text(formatMs(ui?.durationMs ?: 0L), color = c.textMid, fontFamily = DisplayFamily, fontSize = 13.sp)
+            Text(formatMs(ui?.progressMs ?: 0L), color = c.textMid, fontFamily = MonoFamily, fontSize = 13.sp)
+            Text(formatMs(ui?.durationMs ?: 0L), color = c.textMid, fontFamily = MonoFamily, fontSize = 13.sp)
         }
     }
 }

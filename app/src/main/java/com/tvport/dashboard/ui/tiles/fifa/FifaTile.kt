@@ -29,7 +29,9 @@ import com.tvport.dashboard.core.tickerFlow
 import com.tvport.dashboard.ui.dashboard.TileCard
 import com.tvport.dashboard.ui.dashboard.TileHeader
 import com.tvport.dashboard.ui.dashboard.TileQuietMessage
+import androidx.compose.foundation.layout.Arrangement
 import com.tvport.dashboard.ui.theme.BodyFamily
+import com.tvport.dashboard.ui.theme.MonoFamily
 import com.tvport.dashboard.ui.theme.DisplayFamily
 import com.tvport.dashboard.ui.theme.LocalDash
 
@@ -76,7 +78,10 @@ private fun FifaBody(ui: FifaUi) {
     }
     val remaining = ui.kickoffMillis - now
 
-    Column(Modifier.fillMaxSize()) {
+    Column(
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+    ) {
         // --- Competition + (optional) sample chip ---
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (ui.competition != null) {
@@ -85,7 +90,7 @@ private fun FifaBody(ui: FifaUi) {
                     color = c.accent,
                     fontFamily = BodyFamily,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     letterSpacing = 1.5.sp,
                 )
             }
@@ -95,7 +100,7 @@ private fun FifaBody(ui: FifaUi) {
             }
         }
 
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
 
         // --- HOME v AWAY on one line, big and bold ---
         Text(
@@ -105,28 +110,19 @@ private fun FifaBody(ui: FifaUi) {
             fontWeight = FontWeight.Bold,
             fontSize = 22.sp,
             lineHeight = 26.sp,
-            maxLines = 2,
+            maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
 
         Spacer(Modifier.height(10.dp))
 
-        // --- Live countdown + local kick-off on one line (coral/accent2) ---
+        // --- Live countdown (mono, tabular) ---
         Text(
             text = formatCountdown(remaining),
             color = c.accent2,
-            fontFamily = DisplayFamily,
+            fontFamily = MonoFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 26.sp,
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = ui.kickoffLocalLabel,
-            color = c.textMid,
-            fontFamily = BodyFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 15.sp,
-            maxLines = 1,
+            fontSize = 24.sp,
         )
     }
 }

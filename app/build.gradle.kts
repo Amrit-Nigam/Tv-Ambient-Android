@@ -33,6 +33,7 @@ android {
         buildConfigField("String", "SPOTIFY_REFRESH_TOKEN", "\"${secret("SPOTIFY_REFRESH_TOKEN")}\"")
         buildConfigField("String", "FOOTBALL_DATA_TOKEN", "\"${secret("FOOTBALL_DATA_TOKEN")}\"")
         buildConfigField("String", "CALENDAR_ICAL_URL", "\"${secret("CALENDAR_ICAL_URL")}\"")
+        buildConfigField("String", "CLAUDE_STATUS_URL", "\"${secret("CLAUDE_STATUS_URL")}\"")
     }
 
     buildTypes {
