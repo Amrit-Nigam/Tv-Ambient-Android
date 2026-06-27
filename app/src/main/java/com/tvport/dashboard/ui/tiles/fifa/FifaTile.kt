@@ -49,7 +49,7 @@ fun FifaTile(modifier: Modifier = Modifier) {
     TileCard(modifier) {
         Column(Modifier.fillMaxSize()) {
             TileHeader(label = "Next Match", icon = Icons.Filled.SportsSoccer)
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
 
             when (val s = state) {
                 is TileState.Content -> FifaBody(s.data)
@@ -97,46 +97,36 @@ private fun FifaBody(ui: FifaUi) {
 
         Spacer(Modifier.height(10.dp))
 
-        // --- HOME  v  AWAY, big and bold ---
+        // --- HOME v AWAY on one line, big and bold ---
         Text(
-            text = ui.homeTeam,
+            text = "${ui.homeTeam}  v  ${ui.awayTeam}",
             color = c.textHi,
             fontFamily = DisplayFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
-            lineHeight = 27.sp,
-            maxLines = 1,
-        )
-        Text(
-            text = "v  ${ui.awayTeam}",
-            color = c.textHi,
-            fontFamily = DisplayFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
-            lineHeight = 27.sp,
-            maxLines = 1,
+            fontSize = 22.sp,
+            lineHeight = 26.sp,
+            maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(10.dp))
 
-        // --- Live countdown, prominent in coral/accent2 ---
+        // --- Live countdown + local kick-off on one line (coral/accent2) ---
         Text(
             text = formatCountdown(remaining),
             color = c.accent2,
             fontFamily = DisplayFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 28.sp,
+            fontSize = 26.sp,
         )
-
-        Spacer(Modifier.height(6.dp))
-
-        // --- Local kick-off date + time ---
+        Spacer(Modifier.height(2.dp))
         Text(
             text = ui.kickoffLocalLabel,
             color = c.textMid,
             fontFamily = BodyFamily,
             fontWeight = FontWeight.Medium,
-            fontSize = 18.sp,
+            fontSize = 15.sp,
+            maxLines = 1,
         )
     }
 }

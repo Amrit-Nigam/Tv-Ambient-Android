@@ -31,7 +31,7 @@ class ClockViewModel @Inject constructor(
 
     val ui = combine(tickerFlow(1000L), config.config) { _, cfg ->
         val now = Date()
-        val timeFmt = SimpleDateFormat(if (cfg.use24Hour) "HH:mm" else "hh:mm", Locale.getDefault())
+        val timeFmt = SimpleDateFormat(if (cfg.use24Hour) "HH:mm" else "h:mm", Locale.getDefault())
         val ampmFmt = SimpleDateFormat("a", Locale.getDefault())
         val dateFmt = SimpleDateFormat("EEE d MMM yyyy", Locale.getDefault())
         ClockUi(

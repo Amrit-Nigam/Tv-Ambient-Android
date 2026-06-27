@@ -39,7 +39,7 @@ fun F1Tile(modifier: Modifier = Modifier) {
     TileCard(modifier) {
         Column(Modifier.fillMaxSize()) {
             TileHeader(label = "Next Race", icon = Icons.Filled.SportsMotorsports)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             when (val s = state) {
                 is TileState.Content -> F1Body(s.data)
@@ -97,22 +97,14 @@ private fun F1Body(ui: F1Ui) {
             overflow = TextOverflow.Ellipsis,
         )
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(8.dp))
 
         Text(
             text = formatCountdown(remaining),
             color = c.accent2,
             fontFamily = DisplayFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 27.sp,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = ui.localLabel,
-            color = c.textMid,
-            fontFamily = BodyFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 17.sp,
+            fontSize = 24.sp,
         )
     }
 }

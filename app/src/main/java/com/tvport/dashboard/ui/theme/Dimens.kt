@@ -6,7 +6,7 @@ import androidx.compose.ui.unit.dp
 object Dimens {
     val screenPadding = 32.dp
     val tileGap = 18.dp
-    val tilePadding = 22.dp
+    val tilePadding = 16.dp
     val tileCorner = 24.dp
     val tileBorder = 1.dp
 }

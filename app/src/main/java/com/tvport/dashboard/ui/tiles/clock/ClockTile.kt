@@ -36,8 +36,8 @@ fun ClockTile(modifier: Modifier = Modifier) {
                 color = c.textHi,
                 fontFamily = DisplayFamily,
                 fontWeight = FontWeight.Bold,
-                fontSize = 76.sp,
-                lineHeight = 78.sp,
+                fontSize = 64.sp,
+                lineHeight = 66.sp,
                 letterSpacing = (-2).sp,
             )
             if (ui.ampm.isNotEmpty()) {

@@ -2,6 +2,7 @@ package com.tvport.dashboard.ui.tiles.nowplaying
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tvport.dashboard.core.AlbumColorBus
 import com.tvport.dashboard.core.TileState
 import com.tvport.dashboard.core.tickerFlow
 import com.tvport.dashboard.data.config.ConfigRepository
@@ -30,6 +31,8 @@ import javax.inject.Inject
 class NowPlayingViewModel @Inject constructor(
     private val repository: NowPlayingRepository,
     private val config: ConfigRepository,
+    private val albumColorExtractor: AlbumColorExtractor,
+    private val albumColorBus: AlbumColorBus,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<TileState<NowPlayingUi>>(TileState.Loading)
@@ -38,9 +41,23 @@ class NowPlayingViewModel @Inject constructor(
     /** Last real track, echoed into Fallback states to keep the tile alive. */
     private var lastKnown: NowPlayingUi? = null
 
+    /** URL whose palette we last published, so we only re-extract when the art changes. */
+    private var lastArtUrl: String? = null
+
     init {
         startPolling()
         startLocalTicker()
+    }
+
+    /** Re-derive the page accent scheme whenever the album art URL changes. */
+    private fun maybeUpdateColor(ui: NowPlayingUi?) {
+        val url = ui?.albumArtUrl
+        if (url == lastArtUrl) return
+        lastArtUrl = url
+        albumColorBus.publishArt(url)
+        viewModelScope.launch {
+            albumColorBus.publish(albumColorExtractor.extract(url))
+        }
     }
 
     private fun startPolling() = viewModelScope.launch {
@@ -49,6 +66,7 @@ class NowPlayingViewModel @Inject constructor(
             val result = repository.fetch(lastKnown)
             if (result is TileState.Content) {
                 lastKnown = result.data
+                maybeUpdateColor(result.data)
             }
             _state.value = result
 

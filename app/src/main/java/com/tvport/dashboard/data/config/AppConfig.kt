@@ -13,7 +13,7 @@ data class AppConfig(
 
     // Units & formatting
     val metric: Boolean = true,
-    val use24Hour: Boolean = true,
+    val use24Hour: Boolean = false,
 
     // Day/night schedule (local wall-clock hours, 0-23). Night dims the UI.
     val nightStartHour: Int = 22,

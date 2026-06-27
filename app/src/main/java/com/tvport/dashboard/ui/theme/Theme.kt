@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import com.tvport.dashboard.core.AlbumScheme
 
 /**
  * Day/night-aware color set. Tiles read from [LocalDash] rather than hardcoding colors,
@@ -47,6 +49,27 @@ val NightColors = DashColors(
 )
 
 val LocalDash = staticCompositionLocalOf { DayColors }
+
+/**
+ * Re-theme the palette around the current album-art [scheme]: accents become the cover's hues and
+ * the backgrounds become a deep tint of the dominant color, so the whole page takes on the album.
+ * Text stays light. Night mode keeps the tint but darker. Returns the base palette unchanged when
+ * no art has loaded yet.
+ */
+fun DashColors.withAlbumScheme(scheme: AlbumScheme?): DashColors {
+    if (scheme == null) return this
+    val accent = Color(scheme.accent)
+    val accent2 = Color(scheme.accent2)
+    val bgMix = if (isNight) 0.92f else 0.87f      // how far toward black
+    val raisedMix = if (isNight) 0.86f else 0.80f
+    return copy(
+        accent = accent,
+        accent2 = accent2,
+        bg = lerp(accent, Color.Black, bgMix),
+        raised = lerp(accent, Color.Black, raisedMix),
+        border = accent.copy(alpha = 0.22f),
+    )
+}
 
 @Composable
 fun DashTheme(isNight: Boolean, content: @Composable () -> Unit) {
