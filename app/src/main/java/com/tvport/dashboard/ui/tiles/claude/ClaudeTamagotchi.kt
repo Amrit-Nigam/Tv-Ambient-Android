@@ -93,6 +93,11 @@ fun ClaudeTamagotchi(modifier: Modifier = Modifier) {
         val previous = prevKind
         prevKind = kind
         if (offline || previous == null || previous == kind) return@LaunchedEffect
+        // Only alert when a turn was ACTIVELY running and just changed — i.e. came from thinking/
+        // tool. This makes the chime fire exactly once per real turn and ignores any spurious
+        // idle→done / done→idle churn from the status server, so it never loops.
+        val wasActive = previous == ClaudeKind.THINKING || previous == ClaudeKind.TOOL
+        if (!wasActive) return@LaunchedEffect
         when (kind) {
             ClaudeKind.DONE -> playClaudeChime(needsHelp = false)
             ClaudeKind.WAITING, ClaudeKind.PERMISSION -> playClaudeChime(needsHelp = true)

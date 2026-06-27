@@ -39,11 +39,18 @@ class F1Repository @Inject constructor(
         return try {
             val resp = api.nextRace()
             val race = resp.mrData.raceTable.races.firstOrNull()
-            if (race == null) {
-                Log.i(TAG, "No upcoming race in current season (off-season)")
-                TileState.Idle("No upcoming race")
+            val ui = race?.let { map(it) }
+            if (ui == null) {
+                if (race == null) {
+                    Log.i(TAG, "No upcoming race in current season (off-season)")
+                    TileState.Idle("No upcoming race")
+                } else {
+                    // Race present but its date/time wouldn't parse — DON'T fabricate a "now" start
+                    // (that renders a false "Lights out!"); keep the last good race instead.
+                    Log.w(TAG, "Next race has an unparseable date — showing last known")
+                    TileState.Fallback("F1 schedule unavailable", lastGood)
+                }
             } else {
-                val ui = map(race)
                 lastGood = ui
                 Log.d(TAG, "Next race: ${ui.raceName} @ ${ui.localLabel}")
                 TileState.Content(ui)
@@ -55,8 +62,9 @@ class F1Repository @Inject constructor(
         }
     }
 
-    private fun map(r: RaceDto): F1Ui {
-        val millis = parseRaceMillis(r.date, r.time) ?: System.currentTimeMillis()
+    /** Maps a race to UI, or null if its date/time can't be parsed (caller keeps last known). */
+    private fun map(r: RaceDto): F1Ui? {
+        val millis = parseRaceMillis(r.date, r.time) ?: return null
         val loc = listOfNotNull(r.circuit.location.locality, r.circuit.location.country)
             .joinToString(", ")
         return F1Ui(

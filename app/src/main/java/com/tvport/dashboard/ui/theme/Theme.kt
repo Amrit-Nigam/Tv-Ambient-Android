@@ -2,7 +2,7 @@ package com.tvport.dashboard.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import com.tvport.dashboard.core.AlbumScheme
@@ -48,7 +48,10 @@ val NightColors = DashColors(
     isNight = true,
 )
 
-val LocalDash = staticCompositionLocalOf { DayColors }
+// compositionLocalOf (NOT static): the provided DashColors is a brand-new instance on every frame
+// of the album-color tweens, so we want only the composables that actually read it to recompose —
+// not the entire dashboard subtree each frame.
+val LocalDash = compositionLocalOf { DayColors }
 
 /**
  * Re-theme the palette around the current album-art [scheme]: accents become the cover's hues and

@@ -7,6 +7,7 @@ import com.tvport.dashboard.core.TileState
 import com.tvport.dashboard.core.tickerFlow
 import com.tvport.dashboard.data.config.ConfigRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +45,9 @@ class NowPlayingViewModel @Inject constructor(
     /** URL whose palette we last published, so we only re-extract when the art changes. */
     private var lastArtUrl: String? = null
 
+    /** The in-flight palette extraction, cancelled when the art changes again. */
+    private var colorJob: Job? = null
+
     init {
         startPolling()
         startLocalTicker()
@@ -55,8 +59,12 @@ class NowPlayingViewModel @Inject constructor(
         if (url == lastArtUrl) return
         lastArtUrl = url
         albumColorBus.publishArt(url)
-        viewModelScope.launch {
-            albumColorBus.publish(albumColorExtractor.extract(url))
+        // Cancel any older extraction so a slow one can't finish late and re-theme the page to a
+        // track that's no longer playing; re-check the URL before publishing as a second guard.
+        colorJob?.cancel()
+        colorJob = viewModelScope.launch {
+            val scheme = albumColorExtractor.extract(url)
+            if (url == lastArtUrl) albumColorBus.publish(scheme)
         }
     }
 

@@ -37,9 +37,13 @@ class ClaudeRepository @Inject constructor(
         if (base.isBlank()) "" else "$base/events"
     }
 
-    // SSE connections are long-lived: disable the read timeout so the stream isn't killed mid-idle.
+    // The server sends an SSE heartbeat (": ping") every ~2s, so a healthy stream always has bytes
+    // arriving. We therefore use a FINITE read timeout (not 0): if nothing — not even a heartbeat —
+    // arrives for this long, the link is silently dead (laptop asleep / Wi-Fi dropped / NAT timed
+    // out the flow without a FIN). OkHttp then fires onFailure and the reconnect loop recovers and
+    // shows "offline", instead of sitting forever on a stale "online" state.
     private val sseClient: OkHttpClient = client.newBuilder()
-        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .build()
 
