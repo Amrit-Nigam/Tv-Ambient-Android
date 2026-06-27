@@ -144,19 +144,31 @@ private val FRAMES_SURPRISE = listOf(
     Frame(180,SETTLE_HALF),Frame(500,WIDE),
 )
 
-private val ALIVE = FRAMES_BREATHE + FRAMES_BLINK + FRAMES_LOOK
-
-private fun framesFor(kind: ClaudeKind, busy: Boolean): List<Frame> = when {
-    busy -> ALIVE
-    kind == ClaudeKind.DONE -> FRAMES_WINK
-    kind == ClaudeKind.WAITING || kind == ClaudeKind.PERMISSION -> FRAMES_SURPRISE
-    else -> FRAMES_SLEEP // idle / offline
-}
+// While busy, cycle through these alive animations — switched every 10s for variety.
+private val ALIVE_SETS = listOf(FRAMES_BREATHE, FRAMES_BLINK, FRAMES_LOOK)
+private const val ALIVE_SWITCH_MS = 10_000L
 
 /** Renders the animated creature, picking the animation from the Claude state. */
 @Composable
 fun Creature(kind: ClaudeKind, busy: Boolean, modifier: Modifier = Modifier) {
-    val frames = remember(kind, busy) { framesFor(kind, busy) }
+    // Rotate the busy/alive animation every 10 seconds.
+    var aliveIdx by remember { mutableIntStateOf(0) }
+    LaunchedEffect(busy) {
+        if (!busy) return@LaunchedEffect
+        while (true) {
+            delay(ALIVE_SWITCH_MS)
+            aliveIdx = (aliveIdx + 1) % ALIVE_SETS.size
+        }
+    }
+
+    val frames = remember(kind, busy, aliveIdx) {
+        when {
+            busy -> ALIVE_SETS[aliveIdx]
+            kind == ClaudeKind.DONE -> FRAMES_WINK
+            kind == ClaudeKind.WAITING || kind == ClaudeKind.PERMISSION -> FRAMES_SURPRISE
+            else -> FRAMES_SLEEP // idle / offline
+        }
+    }
     var idx by remember(frames) { mutableIntStateOf(0) }
     LaunchedEffect(frames) {
         idx = 0

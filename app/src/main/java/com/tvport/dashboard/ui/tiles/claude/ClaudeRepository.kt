@@ -3,44 +3,87 @@ package com.tvport.dashboard.ui.tiles.claude
 import android.util.Log
 import com.tvport.dashboard.BuildConfig
 import com.tvport.dashboard.core.TileState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
+import okhttp3.sse.EventSource
+import okhttp3.sse.EventSourceListener
+import okhttp3.sse.EventSources
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Fetches the Claude statusbar state from the LAN server (serve.py) over plain OkHttp — the
- * endpoint is a full URL from BuildConfig, so no Retrofit base-URL juggling. Never throws:
- * blank URL -> Idle("not configured"); network/parse failure -> Fallback (laptop asleep/off LAN).
+ * PUSH model: the Mac server streams Claude's state over Server-Sent Events; the TV holds one
+ * long-lived connection and receives an update on every lifecycle transition (new prompt, tool,
+ * needs-input, finished, stopped) — it never polls. On disconnect it shows "offline" and
+ * auto-reconnects with backoff. Blank URL -> a one-shot Idle.
  */
 @Singleton
 class ClaudeRepository @Inject constructor(
-    private val client: OkHttpClient,
+    client: OkHttpClient,
     private val json: Json,
 ) {
-    private val url: String = BuildConfig.CLAUDE_STATUS_URL
+    private val eventsUrl: String = run {
+        val raw = BuildConfig.CLAUDE_STATUS_URL.trim().trimEnd('/')
+        val base = if (raw.endsWith("/status")) raw.removeSuffix("/status") else raw
+        if (base.isBlank()) "" else "$base/events"
+    }
 
-    suspend fun fetch(last: ClaudeUi?): TileState<ClaudeUi> {
-        if (url.isBlank()) return TileState.Idle("Claude status not configured")
-        return withContext(Dispatchers.IO) {
-            try {
-                client.newCall(Request.Builder().url(url).build()).execute().use { resp ->
-                    val body = resp.body?.string()
-                    if (!resp.isSuccessful || body.isNullOrBlank()) {
-                        return@use TileState.Fallback("HTTP ${resp.code}", last)
-                    }
-                    val dto = json.decodeFromString(ClaudeStateDto.serializer(), body)
-                    TileState.Content(dto.toUi())
-                }
-            } catch (e: Exception) {
-                // Laptop off / asleep / not on the LAN — show last known, labeled offline.
-                Log.d(TAG, "Claude status fetch failed: ${e.message}")
-                TileState.Fallback("offline", last)
-            }
+    // SSE connections are long-lived: disable the read timeout so the stream isn't killed mid-idle.
+    private val sseClient: OkHttpClient = client.newBuilder()
+        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .retryOnConnectionFailure(true)
+        .build()
+
+    fun stream(): Flow<TileState<ClaudeUi>> = channelFlow {
+        if (eventsUrl.isBlank()) {
+            trySend(TileState.Idle("Claude status not configured"))
+            awaitClose { }
+            return@channelFlow
         }
+        val factory = EventSources.createFactory(sseClient)
+        var last: ClaudeUi? = null
+
+        while (isActive) {
+            val ended = CompletableDeferred<Unit>()
+            val listener = object : EventSourceListener() {
+                override fun onEvent(es: EventSource, id: String?, type: String?, data: String) {
+                    try {
+                        val ui = json.decodeFromString(ClaudeStateDto.serializer(), data).toUi()
+                        last = ui
+                        trySend(TileState.Content(ui))
+                    } catch (e: Exception) {
+                        Log.d(TAG, "bad event: ${e.message}")
+                    }
+                }
+
+                override fun onFailure(es: EventSource, t: Throwable?, response: Response?) {
+                    Log.d(TAG, "SSE failure: ${t?.message}")
+                    trySend(TileState.Fallback("offline", last))
+                    if (!ended.isCompleted) ended.complete(Unit)
+                }
+
+                override fun onClosed(es: EventSource) {
+                    if (!ended.isCompleted) ended.complete(Unit)
+                }
+            }
+            val es = factory.newEventSource(Request.Builder().url(eventsUrl).build(), listener)
+            try {
+                ended.await()
+            } finally {
+                es.cancel()
+            }
+            if (isActive) delay(3000) // reconnect backoff
+        }
+        awaitClose { }
     }
 
     private companion object { const val TAG = "ClaudeTile" }
