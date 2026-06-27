@@ -1,129 +1,193 @@
 # TvPort Dashboard — Android TV Ambient Display
 
-A single-purpose, always-on **Android TV / Google TV** dashboard. One glanceable screen showing:
-**Now Playing (Spotify)** · **ambient audio visualizer** · **large clock + date** · **weather (Open-Meteo)** ·
-**Google Calendar** · **next FIFA/football match** · **auto-dim + anti burn-in** for 24/7 use.
+An always-on **Android TV / Google TV** dashboard. One glanceable screen with:
 
-Built with Kotlin, Jetpack Compose (+ Compose for TV), Hilt, Retrofit/OkHttp + kotlinx.serialization,
-Coroutines/Flow, Coil, DataStore. MVVM — each tile owns a `ViewModel` exposing a `StateFlow<TileState>`
-so **every tile fails independently** and never blanks or crashes the screen.
+- 🎵 **Now Playing** — your Spotify track on a spinning **vinyl record**; the whole page re-themes
+  to the album cover's color, with the cover blurred behind everything as a faded aura
+- 🕐 **Clock + date** — big, legible (12-hour)
+- ⚽ **Next Match** — the next football fixture with a live countdown (football-data.org)
+- 🏎️ **Next F1 Race** — the next Grand Prix with a live countdown (Jolpica / Ergast)
+- 🤖 **Claude status bar** (optional) — a live pixel creature showing what Claude Code is doing
+  in your terminal (working / waiting for you / done / idle), pushed in real time from your Mac
+
+Built with Kotlin + Jetpack Compose for TV. Fonts: **Geist** (Vercel).
 
 ---
 
-## 1. Prerequisites
-- **JDK 17** (e.g. `brew install openjdk@17`)
-- **Android SDK** with `platforms;android-34`, `build-tools;34.0.0`, `platform-tools`. Min SDK 21, target 34.
-- For the emulator path: `system-images;android-34;android-tv;arm64-v8a` + `emulator`.
+## ⚡ TL;DR (if you already have the tools)
 
-`local.properties` must point at your SDK:
+```bash
+cp secrets.properties.example secrets.properties   # then fill it in (see Step 2)
+./gradlew :app:assembleDebug                        # build the APK
+adb connect <your-tv-ip>:5555                        # accept the prompt on the TV
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n com.tvport.dashboard/.MainActivity
 ```
-sdk.dir=/path/to/Android/sdk
+
+New to this? Follow the full steps below. ⬇️
+
+---
+
+## What you'll need
+
+- A **Mac or PC** to build the app (one-time)
+- An **Android TV / Google TV** (e.g. Sony BRAVIA, Chromecast with Google TV, TCL/Hisense)
+- Both on the **same Wi-Fi**
+- A **Spotify** account, and optionally a free **football-data.org** account
+- ~30 minutes the first time
+
+---
+
+## Step 1 — Get the project and build tools
+
+You need a Java JDK 17 and the Android SDK. Two options:
+
+**Easiest — Android Studio**
+1. Install **Android Studio**: <https://developer.android.com/studio>
+2. **Open** this `tvport` folder in it — the SDK downloads automatically.
+
+**Or — command line (Mac + Homebrew):**
+```bash
+brew install openjdk@17
+brew install --cask android-commandlinetools
+echo "sdk.dir=/opt/homebrew/share/android-commandlinetools" > local.properties
+yes | sdkmanager --licenses
+sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 ```
 
-## 2. Secrets — where each value goes
-**Nothing is hardcoded in source.** Secrets live in a **gitignored** `secrets.properties` at the repo root
-(copy from `secrets.properties.example`). They are injected into `BuildConfig` at build time by `app/build.gradle.kts`.
+---
 
-| Key | Required? | Notes |
-|---|---|---|
-| `SPOTIFY_CLIENT_ID` | ✅ | Spotify developer app client id |
-| `SPOTIFY_CLIENT_SECRET` | ✅ | Spotify developer app client secret |
-| `SPOTIFY_REFRESH_TOKEN` | ✅ | One-time OAuth refresh token (see §3) |
-| `FOOTBALL_DATA_TOKEN` | ⬜ optional | football-data.org free token. Blank → FIFA tile shows a **labeled static fallback** |
-| `CALENDAR_ICAL_URL` | ⬜ optional | Google Calendar "Secret address in iCal format". Blank → Calendar shows "No calendar connected" |
+## Step 2 — Add your secrets
 
-> Weather (Open-Meteo) needs **no key**. Location defaults to **Kharghar, Navi Mumbai** (19.0473, 73.0699) — see `CONFIG.md`.
+Secrets stay out of the code in a file the app reads at build time. **It's never committed** (git-ignored).
 
-After editing `secrets.properties`, rebuild so the new values land in `BuildConfig`.
+```bash
+cp secrets.properties.example secrets.properties
+```
+Open `secrets.properties` and fill it in:
 
-## 3. Generating the Spotify refresh token
-The app uses the **Authorization Code flow** and refreshes the access token automatically. You only need to
-produce a refresh token **once**:
-
-1. Create an app at <https://developer.spotify.com/dashboard>. Note the **Client ID** and **Client Secret**.
-2. Add a **Redirect URI** (e.g. `http://127.0.0.1:8888/callback`) in the app settings.
-3. In a browser, authorize with these scopes (URL-encode the space as `%20`):
+### 2a. Spotify (required for Now Playing)
+1. <https://developer.spotify.com/dashboard> → **Create app**. Note **Client ID** + **Client Secret**.
+2. In the app settings add Redirect URI `http://127.0.0.1:8888/callback` → Save.
+3. Paste this in a browser (replace `CLIENT_ID`), Enter, approve:
    ```
    https://accounts.spotify.com/authorize?client_id=CLIENT_ID&response_type=code&redirect_uri=http://127.0.0.1:8888/callback&scope=user-read-currently-playing%20user-read-playback-state
    ```
-   Approve, then copy the `code=...` value from the redirected URL.
-4. Exchange the code for tokens:
+4. The page won't load — that's fine. Copy the `code=...` value from the URL bar.
+5. Trade it for a refresh token (replace the 3 values):
    ```bash
    curl -X POST https://accounts.spotify.com/api/token \
-     -d grant_type=authorization_code \
-     -d code=PASTE_CODE \
+     -d grant_type=authorization_code -d code=PASTE_CODE \
      -d redirect_uri=http://127.0.0.1:8888/callback \
      -u CLIENT_ID:CLIENT_SECRET
    ```
-   Copy `refresh_token` from the JSON into `SPOTIFY_REFRESH_TOKEN`.
+6. Put all three into `secrets.properties`:
+   ```
+   SPOTIFY_CLIENT_ID=...
+   SPOTIFY_CLIENT_SECRET=...
+   SPOTIFY_REFRESH_TOKEN=...
+   ```
+> Now Playing mirrors whatever's playing on your Spotify account (any device). Nothing playing → a
+> tidy idle state.
 
-> Scopes that matter: `user-read-currently-playing` (primary) and optionally `user-read-playback-state`.
-> The "currently playing" tile only needs `user-read-currently-playing`.
-> **Now Playing reflects your account's active playback** — start a track on any Spotify device and it appears;
-> when nothing plays it shows a tasteful idle state. A best-effort `MediaSessionManager` source is also wired as a
-> secondary for locally-played audio (often inactive on a stock TV — Spotify Web API is primary).
+### 2b. Football (optional — Next Match tile)
+1. Register free at <https://www.football-data.org/client/register> → they email a token.
+2. `FOOTBALL_DATA_TOKEN=your_token`
+3. Choose the competition in `CONFIG.md` (`footballCompetition`, default `WC`; or `PL`, `CL`, `PD`…).
+> No token → the tile shows a labeled "SAMPLE" match (no crash).
 
-## 4. Getting the Google Calendar iCal URL (recommended, no OAuth)
-1. <https://calendar.google.com> → hover your calendar → **⋮ → Settings and sharing**.
-2. Scroll to **Integrate calendar** → copy **Secret address in iCal format** (ends in `/basic.ics`).
-3. Put it in `CALENDAR_ICAL_URL` and rebuild. The tile fetches/parses it and shows your next 2–3 events.
+### 2c. Location
+Default is **Kharghar, Navi Mumbai**. Change `latitude`/`longitude` in `CONFIG.md` if you want.
 
-(We chose iCal over OAuth — far less setup for a single-user wall display. OAuth would require its own
-refresh-token exchange.)
+### 2d. Claude bar URL (optional)
+Leave `CLAUDE_STATUS_URL` blank unless you're doing Step 6.
 
-## 5. football-data.org token (optional)
-Register free at <https://www.football-data.org/client/register>, put the token in `FOOTBALL_DATA_TOKEN`.
-Pick the competition/team in `CONFIG.md` (`footballCompetition`, default `WC`; or set `footballTeamId`).
-No token → the tile renders a clearly-labeled **SAMPLE** fixture (no crash).
+---
 
-## 6. Build
+## Step 3 — Build the APK
+
+**Android Studio:** **Build → Build APK(s)**.
+
+**Command line:**
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || echo /opt/homebrew/opt/openjdk@17)
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17    # adjust to your JDK
 ./gradlew :app:assembleDebug
-# APK: app/build/outputs/apk/debug/app-debug.apk
 ```
+Result → `app/build/outputs/apk/debug/app-debug.apk`
 
-## 7. Install on an Android TV via ADB
-1. On the TV: **Settings → Device Preferences → About →** click **Build** 7× to enable Developer options,
-   then enable **Network debugging / USB debugging**. Note the TV's IP (Settings → Network).
-2. From your computer:
+---
+
+## Step 4 — Install on your Google TV
+
+1. **Enable debugging on the TV:**
+   - **Settings → System → About →** click **"Android TV OS build" 7 times**.
+   - **Settings → System → Developer options →** turn on **Network debugging**.
+   - Note the TV's IP: **Settings → Network & Internet → (your Wi-Fi) → IP address** (e.g. `192.168.1.42`).
+
+2. **From your computer** (same Wi-Fi):
    ```bash
-   adb connect <tv-ip>:5555
+   adb connect 192.168.1.42:5555      # ← your TV's IP. Choose "Allow" on the popup that appears ON THE TV
    adb install -r app/build/outputs/apk/debug/app-debug.apk
    adb shell am start -n com.tvport.dashboard/.MainActivity
    ```
-The app appears in the Android TV **Apps** row (leanback launcher banner included).
+   > Says `unauthorized`? Accept the **"Allow USB debugging?"** popup on the TV (tick "Always allow"),
+   > then run `adb connect` again.
 
-## 8. Run on boot
-A `BootReceiver` (with `RECEIVE_BOOT_COMPLETED`) relaunches the dashboard after the TV restarts.
-**Caveat:** some Google TV builds / Android 10+ background-activity-start limits can block launching an Activity
-straight from boot. If your TV blocks it, set TvPort as the default start-on-boot app in the TV's settings, or use
-a launcher shortcut. The activity holds `FLAG_KEEP_SCREEN_ON` so the panel never sleeps (night dimming still applies).
+🎉 The dashboard launches.
 
-## 9. Emulator (optional)
-```bash
-sdkmanager "system-images;android-34;android-tv;arm64-v8a"
-avdmanager create avd -n tvport_tv -k "system-images;android-34;android-tv;arm64-v8a" -d tv_1080p
-emulator -avd tvport_tv
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
+---
 
-## 10. Configuration
-Every tunable (location, units, 12/24h, day/night schedule + dim level, pixel-shift, competition, poll
-intervals) is documented in **`CONFIG.md`**, backed by `AppConfig` + DataStore.
+## Step 5 — Add to Home & make it always-on
 
-## 11. Architecture
-```
-ui/dashboard      DashboardScreen (layout), DashboardViewModel (shared config), TileCard helpers
-ui/tiles/*        clock, nowplaying, weather, calendar, fifa — each: Models, Api/Repo, ViewModel, Tile
-ui/visualizer     Visualizer-API reactive background + always-on procedural fallback
-ui/dim            night dimming + anti burn-in pixel-shift surface
-ui/theme          palette, fonts (Space Grotesk / Inter), day/night DashColors
-data/config       AppConfig + ConfigRepository (DataStore)
-di                Hilt modules (network, app)
-core              TileState contract, ticker flow
-boot              BootReceiver
-media             MediaSessionManager secondary Now-Playing source
-```
-Resilience: short network timeouts, lenient JSON, last-known-good caching per tile, and `TileState.Fallback/Idle`
-states everywhere — one dead API never blanks the screen.
+- **Add to Home:** **Home → Apps → Your apps →** find **TvPort Dashboard** → **press & hold** Select →
+  **Add to favorites** → "Move" it to the front. *(Not listed? Open it once via Apps → See all apps.)*
+- **Stop the screensaver:** **Settings → System → Ambient mode → "When to start screensaver" → Never**.
+- **After a TV reboot:** Google TV won't auto-launch apps — open it from favorites once.
+
+---
+
+## Step 6 — (Optional) Live Claude status bar
+
+Shows what Claude Code is doing in your terminal, on the TV, in real time. Needs a tiny helper on the
+**Mac** you run Claude on, which reads `~/.claude/statusbar/state.json` (the file your Claude statusline
+writes — fields `state`, `label`, `project`, `startedAt`).
+
+1. **Status server** — `~/.claude/statusbar/serve.py` reads that file and streams changes over your
+   LAN (Server-Sent Events). It's installed as a LaunchAgent that auto-starts on login. Verify:
+   ```bash
+   curl http://127.0.0.1:4040/status
+   ```
+2. **Point the app at your Mac** — find your Mac's LAN IP (`System Settings → Wi-Fi → Details → IP`),
+   set it in `secrets.properties`, then rebuild + reinstall (Steps 3–4):
+   ```
+   CLAUDE_STATUS_URL=http://192.168.1.40:4040/status
+   ```
+3. **Reliability:** reserve a **static IP** for your Mac in your router so the address never changes,
+   and keep the Mac **awake** on the same Wi-Fi. Otherwise the bar just shows "offline".
+
+The creature: **alive** while working · **surprised + "!"** when it needs you · **winks** when done ·
+**sleeps** when idle/stopped. Blank `CLAUDE_STATUS_URL` simply hides it — everything else still works.
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `adb: command not found` | Use the full path (`.../platform-tools/adb`) or add it to PATH |
+| `adb connect` → `unauthorized` | Accept the "Allow USB debugging" popup on the TV, then reconnect |
+| Installs to the wrong device | An emulator is also connected — use `adb -s <tv-ip>:5555 install …` or close the emulator |
+| Now Playing stuck on "Nothing playing" | Play a song on Spotify; re-check the refresh token |
+| Next Match shows "SAMPLE" | Add a `FOOTBALL_DATA_TOKEN` (Step 2b) |
+| Claude bar says "offline" | Mac asleep / off-Wi-Fi / IP changed — see Step 6.3 |
+| Build fails first run | Let Gradle finish downloading; ensure JDK 17 + Android SDK are installed |
+
+---
+
+## Files
+
+- **`CONFIG.md`** — every tunable (location, units, day/night dim, competition, poll intervals) + defaults
+- **`secrets.properties.example`** — template (copy to `secrets.properties`)
+- **`app/`** — the Android app (Kotlin + Compose for TV)
+
+Enjoy your wall display. 🎶
