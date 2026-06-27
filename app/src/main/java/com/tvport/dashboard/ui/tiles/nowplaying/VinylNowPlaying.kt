@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -218,7 +220,15 @@ private fun VinylDisc(
 @Composable
 private fun TrackInfo(ui: NowPlayingUi?, isPlaying: Boolean, progress: Float) {
     val c = LocalDash.current
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(0.82f)
+            .clip(RoundedCornerShape(24.dp))
+            .background(c.raised.copy(alpha = 0.78f))
+            .border(1.dp, c.border, RoundedCornerShape(24.dp))
+            .padding(horizontal = 28.dp, vertical = 22.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Text(
             text = ui?.trackName ?: "Nothing playing",
             color = c.textHi,
@@ -246,7 +256,7 @@ private fun TrackInfo(ui: NowPlayingUi?, isPlaying: Boolean, progress: Float) {
         // progress line
         Box(
             Modifier
-                .fillMaxWidth(0.7f)
+                .fillMaxWidth()
                 .height(4.dp)
                 .clip(CircleShape)
                 .background(c.textLow.copy(alpha = 0.3f)),
@@ -262,7 +272,7 @@ private fun TrackInfo(ui: NowPlayingUi?, isPlaying: Boolean, progress: Float) {
 
         Spacer(Modifier.height(8.dp))
         Row(
-            Modifier.fillMaxWidth(0.7f),
+            Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(formatMs(ui?.progressMs ?: 0L), color = c.textMid, fontFamily = MonoFamily, fontSize = 13.sp)

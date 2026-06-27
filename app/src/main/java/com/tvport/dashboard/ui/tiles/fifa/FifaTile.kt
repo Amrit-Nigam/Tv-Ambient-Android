@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -79,8 +81,7 @@ private fun FifaBody(ui: FifaUi) {
     val remaining = ui.kickoffMillis - now
 
     Column(
-        Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
+        Modifier.fillMaxWidth(),
     ) {
         // --- Competition + (optional) sample chip ---
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -90,40 +91,72 @@ private fun FifaBody(ui: FifaUi) {
                     color = c.accent,
                     fontFamily = BodyFamily,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     letterSpacing = 1.5.sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
             if (ui.isFallback) {
-                if (ui.competition != null) Spacer(Modifier.width(10.dp))
+                if (ui.competition != null) Spacer(Modifier.width(8.dp))
                 SampleChip()
             }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
 
-        // --- HOME v AWAY on one line, big and bold ---
-        Text(
-            text = "${ui.homeTeam}  v  ${ui.awayTeam}",
-            color = c.textHi,
-            fontFamily = DisplayFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp,
-            lineHeight = 26.sp,
-            maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-        )
+        // --- HOME / AWAY stacked, each with its flag — fits the narrow tile without truncating ---
+        TeamRow(ui.homeFlagUrl, ui.homeTeam)
+        Spacer(Modifier.height(4.dp))
+        TeamRow(ui.awayFlagUrl, ui.awayTeam)
 
         Spacer(Modifier.height(10.dp))
 
         // --- Live countdown (mono, tabular) ---
         Text(
             text = formatCountdown(remaining),
-            color = c.accent2,
+            color = c.accent,
             fontFamily = MonoFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
+            fontSize = 20.sp,
         )
+    }
+}
+
+/** One team line: a small rounded flag (or a neutral placeholder) + the nation name. */
+@Composable
+private fun TeamRow(flagUrl: String?, name: String) {
+    val c = LocalDash.current
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        FlagBadge(flagUrl)
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = name,
+            color = c.textHi,
+            fontFamily = DisplayFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 19.sp,
+            lineHeight = 22.sp,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** A 30×20 rounded flag image; falls back to a faint rounded chip when the nation is unknown. */
+@Composable
+private fun FlagBadge(flagUrl: String?) {
+    val c = LocalDash.current
+    val shape = RoundedCornerShape(4.dp)
+    if (flagUrl != null) {
+        coil.compose.AsyncImage(
+            model = flagUrl,
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.size(30.dp, 20.dp).clip(shape),
+        )
+    } else {
+        Box(Modifier.size(30.dp, 20.dp).clip(shape).background(c.textLow.copy(alpha = 0.22f)))
     }
 }
 

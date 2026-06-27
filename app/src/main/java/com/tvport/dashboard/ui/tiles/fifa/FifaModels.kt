@@ -45,6 +45,8 @@ data class CompetitionDto(
 data class FifaUi(
     val homeTeam: String,         // "Argentina"
     val awayTeam: String,         // "France"
+    val homeFlagUrl: String?,     // flagcdn PNG for the home nation (null if unknown)
+    val awayFlagUrl: String?,     // flagcdn PNG for the away nation (null if unknown)
     val competition: String?,     // "FIFA World Cup" (nullable)
     val kickoffMillis: Long,      // UTC epoch millis of kick-off
     val kickoffLocalLabel: String,// device-local, e.g. "Sat 19 Jul, 23:30"

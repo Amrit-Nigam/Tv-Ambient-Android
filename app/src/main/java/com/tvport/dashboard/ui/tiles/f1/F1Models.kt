@@ -45,6 +45,7 @@ data class F1Ui(
     val raceName: String,
     val circuitName: String,
     val location: String,      // "Spielberg, Austria"
+    val countryFlagUrl: String?, // flagcdn PNG for the host country (null if unknown)
     val round: String?,        // "Round 8"
     val raceStartMillis: Long, // UTC epoch of lights-out
     val localLabel: String,    // "Sun 28 Jun, 18:30"

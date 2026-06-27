@@ -1,8 +1,14 @@
 package com.tvport.dashboard.ui.dashboard
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,20 +16,35 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
@@ -33,7 +54,7 @@ import com.tvport.dashboard.ui.theme.DashTheme
 import com.tvport.dashboard.ui.theme.Dimens
 import com.tvport.dashboard.ui.theme.LocalDash
 import com.tvport.dashboard.ui.theme.withAlbumScheme
-import com.tvport.dashboard.ui.tiles.claude.ClaudeBar
+import com.tvport.dashboard.ui.tiles.claude.ClaudeTamagotchi
 import com.tvport.dashboard.ui.tiles.clock.ClockTile
 import com.tvport.dashboard.ui.tiles.f1.F1Tile
 import com.tvport.dashboard.ui.tiles.fifa.FifaTile
@@ -55,7 +76,9 @@ fun DashboardScreen() {
     val cfg by vm.config.collectAsStateWithLifecycle()
     val scheme by vm.albumScheme.collectAsStateWithLifecycle()
     val artUrl by vm.albumArtUrl.collectAsStateWithLifecycle()
-    val dim = rememberDimState(cfg)
+    // Night dim is now MANUAL (toggled by the on-screen remote control), not time-based.
+    var night by rememberSaveable { mutableStateOf(false) }
+    val dim = rememberDimState(cfg, night)
 
     DashTheme(isNight = dim.isNight) {
         // Blend the album scheme into the base palette, then animate each channel for smooth swaps.
@@ -76,15 +99,24 @@ fun DashboardScreen() {
                 )
 
                 // (1b) The album cover IS the page background — blurred big, faded.
+                // Decode it TINY (32px) and let Crop upscale it: that upscaling IS the blur, and it
+                // works on every Android version. Modifier.blur only exists on API 31+ (the BRAVIA is
+                // API 30), so we can't rely on it — we add it on top purely as extra smoothing where
+                // it's supported.
                 if (!artUrl.isNullOrBlank()) {
+                    val ctx = androidx.compose.ui.platform.LocalContext.current
                     AsyncImage(
-                        model = artUrl,
+                        model = coil.request.ImageRequest.Builder(ctx)
+                            .data(artUrl)
+                            .size(32)          // decode a 32px thumbnail → upscaling blurs it
+                            .crossfade(true)
+                            .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
-                            .scale(1.2f)       // overscan so blur has no hard edges
-                            .blur(50.dp)
+                            .scale(1.2f)       // overscan so edges have no hard seam
+                            .blur(50.dp)       // extra smoothing on API 31+, ignored on API 30
                             .alpha(0.85f),
                     )
                 }
@@ -122,47 +154,95 @@ fun DashboardScreen() {
 
                 // (2) Burn-in pixel-shift + night scrim wrap the content layer.
                 BurnInDimSurface(state = dim) {
-                    Column(
+                    Row(
                         Modifier
                             .fillMaxSize()
                             .padding(Dimens.screenPadding),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.tileGap),
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.tileGap),
                     ) {
-                        Row(
+                        // LEFT: the vinyl hero
+                        VinylNowPlaying(
                             Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            horizontalArrangement = Arrangement.spacedBy(Dimens.tileGap),
-                        ) {
-                            // LEFT: the vinyl hero
-                            VinylNowPlaying(
-                                Modifier
-                                    .weight(1.25f)
-                                    .fillMaxHeight(),
-                            )
+                                .weight(1.25f)
+                                .fillMaxHeight(),
+                        )
 
-                            // RIGHT: clock + the two sports tiles
-                            Column(
-                                Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(),
-                                verticalArrangement = Arrangement.spacedBy(Dimens.tileGap),
+                        // RIGHT: clock → CLAWD tamagotchi hero → compact match/race strip
+                        Column(
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.tileGap),
+                        ) {
+                            ClockTile()
+                            ClaudeTamagotchi(Modifier.fillMaxWidth().weight(1.0f))
+                            Row(
+                                Modifier.fillMaxWidth().weight(1.15f),
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.tileGap),
                             ) {
-                                ClockTile()
-                                FifaTile(Modifier.fillMaxWidth().weight(1f))
-                                F1Tile(Modifier.fillMaxWidth().weight(1f))
+                                FifaTile(Modifier.weight(1f).fillMaxHeight())
+                                F1Tile(Modifier.weight(1f).fillMaxHeight())
                             }
                         }
-
-                        // BOTTOM: live Claude terminal status bar (full width)
-                        ClaudeBar(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(58.dp),
-                        )
                     }
                 }
+
+                // Remote-focusable night toggle, floating above everything (incl. the dim scrim).
+                NightToggle(
+                    night = night,
+                    onToggle = { night = !night },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(Dimens.screenPadding),
+                )
             }
         }
+    }
+}
+
+/**
+ * A small circular control that toggles night dim. It is the only focusable element on the
+ * dashboard, so it grabs focus on launch — press the D-pad center on the remote to flip dim on/off.
+ * Shows a moon when bright (tap to dim) and a sun when dimmed (tap to brighten); the accent ring
+ * appears while focused so it's obvious it's selected.
+ */
+@Composable
+private fun NightToggle(night: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    val c = LocalDash.current
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val focusRequester = remember { FocusRequester() }
+    // Grab focus on launch so the remote's OK button toggles immediately. requestFocus() can no-op
+    // if the node isn't placed yet, so retry a few frames until it sticks.
+    LaunchedEffect(Unit) {
+        repeat(10) {
+            try {
+                focusRequester.requestFocus()
+                return@LaunchedEffect
+            } catch (_: Throwable) {
+            }
+            delay(80)
+        }
+    }
+    val scale by animateFloatAsState(if (focused) 1.12f else 1f, label = "toggleScale")
+
+    Box(
+        modifier
+            .size(54.dp)
+            .scale(scale)
+            .clip(CircleShape)
+            .background(c.raised.copy(alpha = if (focused) 0.95f else 0.6f))
+            .border(if (focused) 3.dp else 1.dp, if (focused) c.accent else c.border, CircleShape)
+            .focusRequester(focusRequester)
+            .focusable(interactionSource = interaction)
+            .clickable(interactionSource = interaction, indication = null) { onToggle() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = if (night) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+            contentDescription = if (night) "Turn dim off" else "Turn dim on",
+            tint = if (focused) c.accent else c.textMid,
+            modifier = Modifier.size(26.dp),
+        )
     }
 }

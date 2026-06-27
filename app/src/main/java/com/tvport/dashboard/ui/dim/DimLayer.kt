@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.tvport.dashboard.core.tickerFlow
 import com.tvport.dashboard.data.config.AppConfig
 import kotlinx.coroutines.flow.collectLatest
-import java.util.Calendar
 import kotlin.math.roundToInt
 
 /** Snapshot of the dim/burn-in state, recomputed on a slow ticker. */
@@ -27,21 +26,15 @@ data class DimState(
     val shiftYdp: Int,
 )
 
-private fun isNightNow(cfg: AppConfig): Boolean {
-    val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    val start = cfg.nightStartHour
-    val end = cfg.nightEndHour
-    return if (start <= end) hour in start until end
-    else hour >= start || hour < end // window wraps midnight (e.g. 22 -> 7)
-}
-
 /**
- * Drives night detection and pixel-shift. Night is re-evaluated every 30s; the pixel-shift
- * vector advances every [AppConfig.pixelShiftPeriodSec] through a small set of offsets so no
- * static element ever sits on the same physical pixels for long (BUILD SPEC §10).
+ * Drives the pixel-shift and applies the caller-controlled [night] flag. Night is NO LONGER
+ * time-based — it is toggled manually from the on-screen control (remote-friendly), so the panel
+ * only dims when you ask it to. The pixel-shift vector still advances every
+ * [AppConfig.pixelShiftPeriodSec] through a small set of offsets so no static element sits on the
+ * same physical pixels for long (BUILD SPEC §10).
  */
 @Composable
-fun rememberDimState(cfg: AppConfig): DimState {
+fun rememberDimState(cfg: AppConfig, night: Boolean): DimState {
     // Eight-step path around a small box, keeps motion gentle and bounded.
     val max = cfg.pixelShiftMaxPx
     val path = listOf(
@@ -49,9 +42,6 @@ fun rememberDimState(cfg: AppConfig): DimState {
         -max to max, -max to 0, -max to -max, 0 to -max,
     )
 
-    val night by produceState(initialValue = isNightNow(cfg), cfg) {
-        tickerFlow(30_000L).collectLatest { value = isNightNow(cfg) }
-    }
     val shiftIndex by produceState(initialValue = 0, cfg) {
         if (!cfg.pixelShiftEnabled) { value = 0; return@produceState }
         var i = 0

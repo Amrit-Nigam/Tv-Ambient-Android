@@ -2,6 +2,7 @@ package com.tvport.dashboard.ui.tiles.fifa
 
 import android.util.Log
 import com.tvport.dashboard.BuildConfig
+import com.tvport.dashboard.core.Flags
 import com.tvport.dashboard.data.config.AppConfig
 import okhttp3.OkHttpClient
 import retrofit2.Converter
@@ -76,9 +77,13 @@ class FifaRepository @Inject constructor(
             .filter { (_, millis) -> millis >= now }
             .minByOrNull { (_, millis) -> millis }
             ?.let { (m, millis) ->
+                val home = m.homeTeam?.name ?: m.homeTeam?.shortName ?: "Home"
+                val away = m.awayTeam?.name ?: m.awayTeam?.shortName ?: "Away"
                 FifaUi(
-                    homeTeam = m.homeTeam?.name ?: m.homeTeam?.shortName ?: "Home",
-                    awayTeam = m.awayTeam?.name ?: m.awayTeam?.shortName ?: "Away",
+                    homeTeam = home,
+                    awayTeam = away,
+                    homeFlagUrl = Flags.url(home),
+                    awayFlagUrl = Flags.url(away),
                     competition = m.competition?.name,
                     kickoffMillis = millis,
                     kickoffLocalLabel = localLabel(millis),
@@ -94,6 +99,8 @@ class FifaRepository @Inject constructor(
         return FifaUi(
             homeTeam = config.fifaFallbackHome,
             awayTeam = config.fifaFallbackAway,
+            homeFlagUrl = Flags.url(config.fifaFallbackHome),
+            awayFlagUrl = Flags.url(config.fifaFallbackAway),
             competition = "Sample fixture",
             kickoffMillis = millis,
             kickoffLocalLabel = localLabel(millis),

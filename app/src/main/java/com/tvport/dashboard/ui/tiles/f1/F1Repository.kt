@@ -1,6 +1,7 @@
 package com.tvport.dashboard.ui.tiles.f1
 
 import android.util.Log
+import com.tvport.dashboard.core.Flags
 import com.tvport.dashboard.core.TileState
 import okhttp3.OkHttpClient
 import retrofit2.Converter
@@ -62,6 +63,7 @@ class F1Repository @Inject constructor(
             raceName = r.raceName,
             circuitName = r.circuit.circuitName,
             location = loc,
+            countryFlagUrl = Flags.url(r.circuit.location.country),
             round = r.round?.let { "Round $it" },
             raceStartMillis = millis,
             localLabel = localFormat().format(Date(millis)),

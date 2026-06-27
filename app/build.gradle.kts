@@ -111,6 +111,7 @@ dependencies {
 
     // Image loading
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("io.coil-kt:coil-gif:2.6.0")
 
     // Dominant-color extraction from album art (drives the dynamic page theme)
     implementation("androidx.palette:palette-ktx:1.0.0")

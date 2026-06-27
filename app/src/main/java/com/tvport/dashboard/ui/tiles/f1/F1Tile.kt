@@ -2,20 +2,29 @@ package com.tvport.dashboard.ui.tiles.f1
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsMotorsports
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tvport.dashboard.core.TileState
@@ -66,20 +75,31 @@ private fun F1Body(ui: F1Ui) {
     val remaining = ui.raceStartMillis - now
 
     Column(
-        Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
+        Modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = ui.raceName,
-            color = c.textHi,
-            fontFamily = DisplayFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 21.sp,
-            lineHeight = 24.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(Modifier.height(4.dp))
+        // Host-country flag + race name. Name wraps to two lines instead of truncating.
+        Row(verticalAlignment = Alignment.Top) {
+            if (ui.countryFlagUrl != null) {
+                AsyncImage(
+                    model = ui.countryFlagUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(30.dp, 20.dp).clip(RoundedCornerShape(4.dp)),
+                )
+                Spacer(Modifier.width(10.dp))
+            }
+            Text(
+                text = ui.raceName,
+                color = c.textHi,
+                fontFamily = DisplayFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 19.sp,
+                lineHeight = 22.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
         Text(
             text = ui.location.ifBlank { ui.circuitName },
             color = c.textMid,
@@ -94,10 +114,10 @@ private fun F1Body(ui: F1Ui) {
 
         Text(
             text = formatCountdown(remaining),
-            color = c.accent2,
+            color = c.accent,
             fontFamily = MonoFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
+            fontSize = 20.sp,
         )
     }
 }
