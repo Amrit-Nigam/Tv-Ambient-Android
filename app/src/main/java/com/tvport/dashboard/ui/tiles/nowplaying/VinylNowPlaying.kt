@@ -94,7 +94,7 @@ fun VinylNowPlaying(modifier: Modifier = Modifier) {
                 .aspectRatio(1f),
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(8.dp))
         TrackInfo(ui = ui, isPlaying = isPlaying, progress = progress)
     }
 }
@@ -253,9 +253,9 @@ private fun TrackInfo(ui: NowPlayingUi?, isPlaying: Boolean, progress: Float) {
     val c = LocalDash.current
     Column(
         modifier = Modifier
-            .fillMaxWidth(0.82f)
+            .fillMaxWidth(0.78f)
             .dashCard()
-            .padding(horizontal = 28.dp, vertical = 22.dp),
+            .padding(horizontal = 20.dp, vertical = 9.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
@@ -263,49 +263,49 @@ private fun TrackInfo(ui: NowPlayingUi?, isPlaying: Boolean, progress: Float) {
             color = c.textHi,
             fontFamily = DisplayFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 30.sp,
+            fontSize = 18.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
         )
         if (!ui?.artists.isNullOrBlank()) {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = ui!!.artists,
                 color = c.accent,
                 fontFamily = BodyFamily,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 20.sp,
+                fontSize = 13.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(7.dp))
         // progress line
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(4.dp)
+                .height(3.dp)
                 .clip(CircleShape)
                 .background(c.textLow.copy(alpha = 0.3f)),
         ) {
             Box(
                 Modifier
                     .fillMaxWidth(progress.coerceIn(0.001f, 1f))
-                    .height(4.dp)
+                    .height(3.dp)
                     .clip(CircleShape)
                     .background(c.accent),
             )
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(5.dp))
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(formatMs(ui?.progressMs ?: 0L), color = c.textMid, fontFamily = MonoFamily, fontSize = 13.sp)
-            Text(formatMs(ui?.durationMs ?: 0L), color = c.textMid, fontFamily = MonoFamily, fontSize = 13.sp)
+            Text(formatMs(ui?.progressMs ?: 0L), color = c.textMid, fontFamily = MonoFamily, fontSize = 11.sp)
+            Text(formatMs(ui?.durationMs ?: 0L), color = c.textMid, fontFamily = MonoFamily, fontSize = 11.sp)
         }
     }
 }
