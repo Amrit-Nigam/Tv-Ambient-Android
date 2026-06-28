@@ -92,6 +92,9 @@ fun DashboardScreen() {
 
         CompositionLocalProvider(LocalDash provides dynamic) {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
+                // Night mode = a true black canvas: no album-cover wash, no aura, no visualizer.
+                // The panel goes dead black behind the cards so a dark room stays dark.
+                if (!dim.isNight) {
                 // (1a) Ambient visualizer at the very back (uses the album accent).
                 VisualizerBackground(
                     modifier = Modifier.fillMaxSize(),
@@ -151,6 +154,7 @@ fun DashboardScreen() {
                             )
                         )
                 )
+                } // end day-only background layers
 
                 // (2) Burn-in pixel-shift + night scrim wrap the content layer.
                 BurnInDimSurface(state = dim) {

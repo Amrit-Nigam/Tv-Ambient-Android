@@ -39,12 +39,12 @@ val DayColors = DashColors(
 val NightColors = DashColors(
     bg = Palette.NightInk,
     raised = Palette.NightRaised,
-    border = Palette.InkBorder.copy(alpha = 0.5f),
+    border = Palette.NightBorder,
     textHi = Palette.NightTextHi,
     textMid = Palette.NightTextMid,
-    textLow = Palette.TextLow.copy(alpha = 0.7f),
-    accent = Palette.TealDim,
-    accent2 = Palette.Coral.copy(alpha = 0.8f),
+    textLow = Palette.NightTextLow,
+    accent = Palette.NightAccent,
+    accent2 = Palette.NightAccent2,
     isNight = true,
 )
 
@@ -61,16 +61,22 @@ val LocalDash = compositionLocalOf { DayColors }
  */
 fun DashColors.withAlbumScheme(scheme: AlbumScheme?): DashColors {
     if (scheme == null) return this
-    val accent = Color(scheme.accent)
-    val accent2 = Color(scheme.accent2)
-    val bgMix = if (isNight) 0.92f else 0.87f      // how far toward black
-    val raisedMix = if (isNight) 0.86f else 0.80f
+    var accent = Color(scheme.accent)
+    var accent2 = Color(scheme.accent2)
+    // At night, pull the album accents toward the warm ember tone and knock them back so the
+    // page never lights up the room — the cover still tints, but quietly.
+    if (isNight) {
+        accent = lerp(accent, Palette.NightAccent, 0.45f)
+        accent2 = lerp(accent2, Palette.NightAccent2, 0.45f)
+    }
+    val bgMix = if (isNight) 0.94f else 0.87f      // how far toward black
+    val raisedMix = if (isNight) 0.90f else 0.80f
     return copy(
         accent = accent,
         accent2 = accent2,
         bg = lerp(accent, Color.Black, bgMix),
         raised = lerp(accent, Color.Black, raisedMix),
-        border = accent.copy(alpha = 0.22f),
+        border = accent.copy(alpha = if (isNight) 0.16f else 0.22f),
     )
 }
 

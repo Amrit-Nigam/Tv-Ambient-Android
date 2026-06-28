@@ -18,6 +18,9 @@ import com.tvport.dashboard.data.config.AppConfig
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.roundToInt
 
+/** Warm near-black used for the night dimming scrim (a hint of amber, not pure black). */
+private val NightScrim = Color(0xFF0A0604)
+
 /** Snapshot of the dim/burn-in state, recomputed on a slow ticker. */
 data class DimState(
     val isNight: Boolean,
@@ -79,10 +82,12 @@ fun BurnInDimSurface(
             content()
         }
         if (animAlpha > 0.001f) {
+            // A very dark warm scrim (not pure black) so night dimming reads as cozy dusk rather
+            // than a flat grey veil — the warmth keeps skin tones / album art from going corpse-blue.
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = animAlpha.coerceIn(0f, 0.95f)))
+                    .background(NightScrim.copy(alpha = animAlpha.coerceIn(0f, 0.95f)))
             )
         }
     }
