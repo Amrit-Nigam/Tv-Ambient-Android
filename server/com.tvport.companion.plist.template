@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  LaunchAgent that runs serve.py on login and keeps it alive.
+  Install:
+    1. Edit the three paths below (python3, serve.py, log) to match your machine.
+    2. cp this file to ~/Library/LaunchAgents/com.tvport.companion.plist
+    3. launchctl load ~/Library/LaunchAgents/com.tvport.companion.plist
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.tvport.companion</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/YOU/.claude/statusbar/serve.py</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Users/YOU/.claude/statusbar/serve.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/YOU/.claude/statusbar/serve.log</string>
+</dict>
+</plist>

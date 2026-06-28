@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -54,6 +55,7 @@ import com.tvport.dashboard.ui.theme.DashTheme
 import com.tvport.dashboard.ui.theme.Dimens
 import com.tvport.dashboard.ui.theme.LocalDash
 import com.tvport.dashboard.ui.theme.withAlbumScheme
+import com.tvport.dashboard.ui.tiles.battery.BatteryTile
 import com.tvport.dashboard.ui.tiles.claude.ClaudeTamagotchi
 import com.tvport.dashboard.ui.tiles.clock.ClockTile
 import com.tvport.dashboard.ui.tiles.f1.F1Tile
@@ -164,12 +166,16 @@ fun DashboardScreen() {
                             .padding(Dimens.screenPadding),
                         horizontalArrangement = Arrangement.spacedBy(Dimens.tileGap),
                     ) {
-                        // LEFT: the vinyl hero
-                        VinylNowPlaying(
+                        // LEFT: the vinyl hero, with the device batteries tucked underneath it.
+                        Column(
                             Modifier
                                 .weight(1.25f)
                                 .fillMaxHeight(),
-                        )
+                            verticalArrangement = Arrangement.spacedBy(Dimens.tileGap),
+                        ) {
+                            VinylNowPlaying(Modifier.fillMaxWidth().weight(1f))
+                            BatteryTile(Modifier.fillMaxWidth().height(108.dp))
+                        }
 
                         // RIGHT: clock → CLAWD tamagotchi hero → compact match/race strip
                         Column(
