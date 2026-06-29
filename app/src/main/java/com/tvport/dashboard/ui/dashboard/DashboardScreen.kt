@@ -169,7 +169,7 @@ fun DashboardScreen() {
                         // LEFT: the vinyl hero, with the device batteries tucked underneath it.
                         Column(
                             Modifier
-                                .weight(1.25f)
+                                .weight(1.05f)
                                 .fillMaxHeight(),
                             verticalArrangement = Arrangement.spacedBy(Dimens.tileGap),
                         ) {

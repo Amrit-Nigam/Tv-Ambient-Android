@@ -202,90 +202,58 @@ def airpods_battery():
     return result
 
 
-# iPhone battery, two layered sources (a background thread polls both so /battery never blocks):
-#   1. libimobiledevice (`ideviceinfo`) — authoritative level + charging, over USB or Wi-Fi, but
-#      its Wi-Fi mode only sees the phone while it's awake/recently-unlocked.
-#   2. Continuity "Instant Hotspot" — the level the Wi-Fi menu shows, parsed from the unified log.
-#      Passive (works even while the phone is locked, as long as it's near the Mac); no charging.
-IDEVICE = "/opt/homebrew/bin/ideviceinfo"
-_idevice = {"level": None, "charging": False, "present": False, "ts": 0.0}
-_hotspot = {"level": None, "ts": 0.0}
+# iPhone battery — wireless lockdown read over Wi-Fi (level + charging, no cable, even locked).
+# A background thread shells out to the standalone reader every 30s so /battery never blocks;
+# the read itself lives in the sibling repo (single source of truth, its own venv + pairing record).
+PHONE_DIR = os.path.expanduser("~/Desktop/code/battery iphone")
+PHONE_PY = os.path.join(PHONE_DIR, ".venv/bin/python")
+PHONE_SCRIPT = os.path.join(PHONE_DIR, "iphone_wireless.py")
+_phone = {"level": None, "charging": False, "present": False, "ts": 0.0}
+# Wireless reads are intermittent (the phone's Wi-Fi radio sleeps when locked); keep showing the
+# last good reading for a while instead of blanking the tile on a single missed poll.
+_PHONE_STALE_SECS = 30 * 60
 
 
-def _read_idevice():
-    """Try USB first, then network (-n). Returns {level, charging, present}."""
-    for net in (False, True):
-        args = [IDEVICE, "-q", "com.apple.mobile.battery"]
-        if net:
-            args.insert(1, "-n")
-        try:
-            out = subprocess.run(args, capture_output=True, text=True, timeout=6).stdout
-        except Exception:
-            continue
-        cap = re.search(r"BatteryCurrentCapacity:\s*(\d+)", out)
-        if not cap:
-            continue
-        chg = re.search(r"BatteryIsCharging:\s*(\w+)", out)
-        charging = bool(chg) and chg.group(1).lower() == "true"
-        return {"level": max(0, min(100, int(cap.group(1)))), "charging": charging, "present": True}
-    return {"level": None, "charging": False, "present": False}
-
-
-def _read_hotspot():
-    """iPhone level from the unified log's 'SFRemoteHotspotDevice ... battery life: N'. Returns N|None."""
+def _read_phone_wireless():
+    """iphone_wireless.py --json -> {level, charging, present}. None fields if unreachable."""
     try:
         out = subprocess.run(
-            ["/usr/bin/log", "show", "--last", "6m", "--style", "compact",
-             "--predicate", 'eventMessage CONTAINS "SFRemoteHotspotDevice"'],
-            capture_output=True, text=True, timeout=12,
-        ).stdout
-        hits = re.findall(r"battery life: (\d+)", out)
-        if hits:
-            return max(0, min(100, int(hits[-1])))
+            [PHONE_PY, PHONE_SCRIPT, "--json"],
+            capture_output=True, text=True, timeout=20,
+        ).stdout.strip()
+        data = json.loads(out) if out else {}
     except Exception:
-        pass
-    return None
+        data = {}
+    if data.get("level") is None:
+        return {"level": None, "charging": False, "present": False}
+    return {
+        "level": max(0, min(100, int(data["level"]))),
+        "charging": bool(data.get("charging")),
+        "present": True,
+    }
 
 
 def _battery_poller():
-    """Refresh the iPhone sources every 30s off the request path."""
+    """Refresh the iPhone reading every 30s off the request path."""
     while True:
-        dev, hs = _read_idevice(), _read_hotspot()
-        now = time.time()
-        with _batt_lock:
-            _idevice.update(dev)
-            _idevice["ts"] = now
-            _hotspot["level"] = hs
-            _hotspot["ts"] = now
+        dev = _read_phone_wireless()
+        if dev["present"]:
+            now = time.time()
+            with _batt_lock:
+                _phone.update(dev)
+                _phone["ts"] = now
         time.sleep(30)
 
 
-# An iPhone Shortcut automation can push its battery here (GET /battery/phone?level=NN&charging=1).
-# This is the most reliable *wireless* source: works anywhere on Wi-Fi, carries charging, and needs
-# no special macOS permission (unlike libimobiledevice's Wi-Fi mode, which the OS blocks for
-# background tools). Kept alongside USB + hotspot as the layered iPhone sources.
-_phone = {"level": None, "charging": False, "ts": 0.0}
-_PHONE_STALE_SECS = 6 * 60 * 60
-
-
 def phone_battery():
-    """Best iPhone source, in priority order:
-      1. libimobiledevice over USB  -> authoritative level + charging (only while cabled to the Mac)
-      2. Shortcut push              -> level + charging, anywhere on Wi-Fi
-      3. Continuity hotspot         -> level only, passive, while broadcasting near the Mac
-    """
+    """Last good wireless reading, or absent once it ages past _PHONE_STALE_SECS."""
     now = time.time()
     with _batt_lock:
-        dev = dict(_idevice)
-        sc = dict(_phone)
-        hs = dict(_hotspot)
-
-    if dev["present"] and dev["level"] is not None and (now - dev["ts"]) <= 120:
-        return {"level": dev["level"], "charging": dev["charging"], "present": True, "source": "usb"}
-    if sc["level"] is not None and (now - sc["ts"]) <= _PHONE_STALE_SECS:
-        return {"level": sc["level"], "charging": sc["charging"], "present": True, "source": "shortcut"}
-    if hs["level"] is not None and (now - hs["ts"]) <= 120:
-        return {"level": hs["level"], "charging": False, "present": True, "source": "hotspot"}
+        p = dict(_phone)
+    if p["present"] and p["level"] is not None and (now - p["ts"]) <= _PHONE_STALE_SECS:
+        stale = (now - p["ts"]) > 120
+        return {"level": p["level"], "charging": p["charging"], "present": True,
+                "stale": stale, "source": "wireless"}
     return {"level": None, "charging": False, "present": False, "source": "none"}
 
 
@@ -313,34 +281,8 @@ class Handler(BaseHTTPRequestHandler):
             self._stream_events()
         elif p == "/battery":
             self._send(200, json.dumps(battery_state()).encode())
-        elif p == "/battery/phone":
-            # iPhone Shortcut push, single URL field: /battery/phone?level=80&charging=1
-            self._update_phone(urllib.parse.parse_qs(parsed.query))
         else:
             self._send(404, b'{"error":"not found"}')
-
-    def _update_phone(self, qs):
-        def first(v):
-            return v[0] if isinstance(v, list) else v
-        try:
-            raw = float(first(qs.get("level")))
-            if 0.0 < raw <= 1.0:               # accept a 0.0-1.0 fraction too
-                raw *= 100.0
-            level = max(0, min(100, int(round(raw))))
-        except Exception:
-            self._send(400, b'{"error":"bad level"}')
-            return
-        # charging is OPTIONAL: a level-only push (the periodic automation) must not clear the bolt;
-        # only the charger-connected/disconnected automations send it and flip it.
-        has_charging = "charging" in qs
-        charging = str(first(qs.get("charging"))).strip().lower() in ("1", "true", "yes", "on")
-        with _batt_lock:
-            _phone["level"] = level
-            if has_charging:
-                _phone["charging"] = charging
-            _phone["ts"] = time.time()
-            cur = _phone["charging"]
-        self._send(200, json.dumps({"ok": True, "level": level, "charging": cur}).encode())
 
     def _stream_events(self):
         """SSE: push the state to this client on every change (and a heartbeat to keep alive).

@@ -253,7 +253,7 @@ private fun TrackInfo(ui: NowPlayingUi?, isPlaying: Boolean, progress: Float) {
     val c = LocalDash.current
     Column(
         modifier = Modifier
-            .fillMaxWidth(0.78f)
+            .fillMaxWidth()
             .dashCard()
             .padding(horizontal = 20.dp, vertical = 9.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
