@@ -32,6 +32,8 @@ Built end-to-end in **Kotlin + Jetpack Compose for TV**.
 
 🏎️ **Next Race** — the next Grand Prix with the host-country flag, circuit, and a live countdown to lights-out (Jolpica / Ergast).
 
+🔋 **Batteries, Apple-widget style** — a green ring per device for your **Mac, iPhone, and AirPods + case**, with a charging bolt. The iPhone level is read **wirelessly over Wi-Fi** — no cable, no Shortcut, no installed app, and it works even while the phone is locked.
+
 🕐 **Clock + date** — big and legible from across the room.
 
 🌙 **Remote-friendly night dim** — one focusable button; press OK on the remote to dim the whole panel when the lights go down.
@@ -59,7 +61,8 @@ Your Claude Code statusline already writes its state to a small JSON file. A tin
                                │  │  • Vinyl / album theme│  │
    Spotify Web API ──────────► │  │  • Claude companion   │  │
    football-data.org ────────► │  │  • Match / Race tiles │  │
-   Jolpica (Ergast) ─────────► │  │  • Clock + night dim  │  │
+   Jolpica (Ergast) ─────────► │  │  • Battery rings      │  │
+                               │  │  • Clock + night dim  │  │
                                │  └───────────────────────┘  │
                                └─────────────────────────────┘
 ```
@@ -69,6 +72,7 @@ Your Claude Code statusline already writes its state to a small JSON file. A tin
 - **Push, not poll** for Claude status — a long-lived Server-Sent Events stream with auto-reconnect and an honest "offline" state when the Mac sleeps.
 - **Resilient by design**: missing API key → labeled sample data, never a crash or an empty box.
 - **Cross-version visuals**: blur is faked via tiny-thumbnail upscaling so it looks right even on Android 11 TVs where `Modifier.blur` doesn't exist.
+- **Battery from one endpoint**: the same Mac companion serves `/battery` alongside the Claude status — Mac via `pmset`, AirPods via `system_profiler`, and the iPhone via a wireless lockdown read over Wi-Fi (a pairing record captured once over USB, then fully cable-free). See [`server/README.md`](server/README.md) for setup.
 
 ## 🛠️ Tech stack
 
